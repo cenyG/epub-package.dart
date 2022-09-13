@@ -98,13 +98,13 @@ class XmlTag {
 }
 
 class _EpubXmlBase {
-  xml.XmlElement _getXmlRoot(String xmlStr) => xml.parse(xmlStr).rootElement;
+  XmlElement _getXmlRoot(String xmlStr) =>
+      XmlDocument.parse(xmlStr).rootElement;
   dom.Document _getHtmlRoot(String xmlStr) => html.parse(xmlStr);
 
-  Iterable<xml.XmlElement> _childElements(xml.XmlElement parent) =>
-      parent.children
-          .map((node) => node is xml.XmlElement ? node : null)
-          .where((n) => n != null);
+  Iterable<XmlElement> _childElements(XmlElement parent) => parent.children
+      .map((node) => node is XmlElement ? node : null)
+      .whereNotNull();
 }
 
 /// Internal record to represents an asset in EPub
@@ -141,12 +141,13 @@ class EpubAsset {
 
 /// External record to represents an asset in EPub
 class EpubDocument {
-  EpubDocument._({this.package, this.id, this.filename, this.asset})
+  EpubDocument._(
+      {required this.package, required this.filename, this.id, this.asset})
       : dirname = p.dirname(filename),
-        file = package.files[asset.filename];
+        file = asset != null ? package.files[asset.filename] : null;
 
   /// Asset ID
-  final String id;
+  final String? id;
 
   /// Path of the asset in EPub
   final String dirname;
@@ -158,20 +159,20 @@ class EpubDocument {
   final EpubPackage package;
 
   /// [EpubAsset] reference
-  final EpubAsset asset;
+  final EpubAsset? asset;
 
   /// [EpubFile] reference
-  final EpubFile file;
+  final EpubFile? file;
 
   /// Returns if file is compressed
-  bool get isCompressed => file.isCompressed;
+  bool get isCompressed => file?.isCompressed ?? false;
 
   /// Asset content type
   /// It prefers `asset.mediaType`
   /// If no [asset] assigned it will lookup by [filename]
   /// When [detectHeader] is set it will detect header
-  Future<String> mimeType({bool detectHeader = false}) async {
-    if (asset != null) return asset.mediaType;
+  Future<String?> mimeType({bool detectHeader = false}) async {
+    if (asset != null) return asset!.mediaType;
 
     if (detectHeader) {
       final bytes = await readAsBytes();
@@ -182,7 +183,7 @@ class EpubDocument {
   }
 
   /// Helper method to create instance from [package] and its [asset]
-  static EpubDocument fromAsset(EpubAsset asset, EpubPackage package) =>
+  static EpubDocument? fromAsset(EpubAsset? asset, EpubPackage package) =>
       asset == null
           ? null
           : EpubDocument._(
@@ -193,24 +194,22 @@ class EpubDocument {
             );
 
   /// Reads content as `Stream`
-  Future<Stream<List<int>>> readStream() => package.fileStream(file);
+  Stream<List<int>>? readStream() => package.fileStream(file);
 
   /// Reads content as `Stream`
-  Future<Stream<List<int>>> rawStream() => package.fileRawStream(file);
+  Stream<List<int>>? rawStream() => package.fileRawStream(file);
 
   /// Reads content as `List<int>`
-  Future<List<int>> readAsBytes() => package.fileBytes(file);
+  Future<List<int>>? readAsBytes() => package.fileBytes(file);
 
   /// Reads content as `List<int>`
-  Future<List<int>> rawAsBytes() => package.fileRawBytes(file);
+  Future<List<int>>? rawAsBytes() => package.fileRawBytes(file);
 
   /// Reads content as UTF-8 String
-  Future<String> readText({Converter<List<int>, String> decoder}) =>
-      package.readFileText(file, decoder: decoder);
+  Future<String>? readText({Converter<List<int>, String>? decoder}) => package.readFileText(file, decoder: decoder);
 
   /// Returns relative [EpubDocument] to current document
-  EpubDocument getRelativeDoc(String relativePath) =>
-      package.getDocumentByPath(pathJoin([dirname, relativePath]));
+  EpubDocument? getRelativeDoc(String relativePath) => package.getDocumentByPath(pathJoin([dirname, relativePath]));
 
   Map<String, dynamic> toJson() => {
         'id': id,

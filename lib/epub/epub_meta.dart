@@ -10,8 +10,8 @@ class EpubItemRef {
   });
   final String idref;
   final bool linear;
-  final String id;
-  final String properties;
+  final String? id;
+  final String? properties;
 
   Map<String, dynamic> toJson() => {
         'idref': idref,
@@ -37,7 +37,7 @@ class EpubMeta extends _EpubXmlBase {
   final items = <String, EpubAsset>{};
   final itemByPath = <String, EpubAsset>{};
 
-  void _loadMetadata(xml.XmlElement root) {
+  void _loadMetadata(XmlElement root) {
     meta.addAll(_childElements(root).map((el) {
       final item = XmlTag(el.name.toString(), el.text);
       el.attributes.forEach((attr) {
@@ -49,12 +49,12 @@ class EpubMeta extends _EpubXmlBase {
 
   static final _requiredItemAttrs = Set.from(['id', 'href', 'media-type']);
 
-  void _loadManifest(xml.XmlElement root) {
+  void _loadManifest(XmlElement root) {
     _childElements(root).forEach((el) {
       final item = EpubAsset._(
-        el.getAttribute('id'),
-        el.getAttribute('href'),
-        el.getAttribute('media-type'),
+        el.getAttribute('id') ?? '',
+        el.getAttribute('href') ?? '',
+        el.getAttribute('media-type') ?? '',
         basePath,
       );
       el.attributes.forEach((attrs) {
@@ -67,13 +67,13 @@ class EpubMeta extends _EpubXmlBase {
     });
   }
 
-  EpubAsset getItemById(String id) => items[id];
-  EpubAsset getItemByPath(String path) => itemByPath[path];
+  EpubAsset? getItemById(String id) => items[id];
+  EpubAsset? getItemByPath(String path) => itemByPath[path];
 
-  void _loadSpine(xml.XmlElement root) {
+  void _loadSpine(XmlElement root) {
     spine.addAll(
       _childElements(root).map((el) => EpubItemRef(
-            el.getAttribute('idref'),
+            el.getAttribute('idref') ?? '',
             linear: el.getAttribute('linear') != 'no',
             id: el.getAttribute('id'),
             properties: el.getAttribute('properties'),
@@ -91,16 +91,15 @@ class EpubMeta extends _EpubXmlBase {
   }
 
   /// Creates [EpubMeta] and load meta data from [filename] in [package]
-  static Future<EpubMeta> load(EpubPackage package, String filename) async {
+  static Future<EpubMeta?> load(EpubPackage package, String filename) async {
     final xmlStr = await package.readText(filename);
     return xmlStr == null ? null : EpubMeta.fromXml(filename, xmlStr);
   }
 
   /// Returns [EpubAsset] of cover image
-  EpubAsset getCoverImageAsset() {
-    final cover = meta.firstWhere(
-        (m) => m.name == 'meta' && m.attrs['name'] == 'cover',
-        orElse: () => null);
+  EpubAsset? getCoverImageAsset() {
+    XmlTag? cover = meta.firstWhereOrNull(
+        (m) => m.name == 'meta' && m.attrs['name'] == 'cover');
     if (cover == null) return null;
 
     final coverId = cover.attrs['content'];

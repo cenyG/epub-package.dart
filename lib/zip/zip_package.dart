@@ -4,9 +4,9 @@ class ZipPackage {
   ZipPackage._(this.file);
   final File file;
 
-  Map<String, ZipLocalFile> entries;
-  List<ZipCentralDirectory> centralDirectories;
-  ZipEndCentralDirectory cdEnd;
+  late Map<String, ZipLocalFile> entries;
+  late List<ZipCentralDirectory> centralDirectories;
+  late ZipHeader cdEnd;
 
   Map<String, dynamic> toJson() => {
         'file': file.path,
@@ -16,9 +16,9 @@ class ZipPackage {
         'stopOffset': stopOffset,
       };
 
-  int stopOffset;
+  late int stopOffset;
 
-  static Future<ZipPackage> from(File file) async {
+  static Future<ZipPackage?> from(File file) async {
     if (!(await file.exists())) return null;
 
     final zp = ZipPackage._(file);
@@ -72,12 +72,10 @@ class ZipPackage {
         }
 
         if (header.isLocalFile) {
-          final ZipLocalFile f = header;
-          entries.add(f);
-          package.addToPosition(f.compressedSize);
+          entries.add(header as ZipLocalFile);
+          package.addToPosition(header.compressedSize);
         } else if (header.isCentralDirectory) {
-          final ZipCentralDirectory cd = header;
-          cds.add(cd);
+          cds.add(header as ZipCentralDirectory);
         }
       }
 
@@ -93,9 +91,9 @@ class ZipPackage {
 
   static Stream<List<int>> extract(
     File file, {
-    final int start,
-    final int end,
-    final int compressionMethod,
+    final int? start,
+    final int? end,
+    final int compressionMethod = 0,
   }) {
     final stream = file.openRead(start, end).cast<List<int>>();
     if (compressionMethod == 0) return stream;
@@ -104,10 +102,10 @@ class ZipPackage {
     throw UnsupportedError('Unsupported compress method: ${compressionMethod}');
   }
 
-  static Stream<List<int>> raw(File file, {final int start, final int end}) =>
+  static Stream<List<int>> raw(File file, {final int? start, final int? end}) =>
       file.openRead(start, end).cast<List<int>>();
 
-  Stream<List<int>> extractStream(String filename) {
+  Stream<List<int>>? extractStream(String filename) {
     final zip = entries[filename];
     return zip == null
         ? null
@@ -117,7 +115,7 @@ class ZipPackage {
             compressionMethod: zip.compressionMethod);
   }
 
-  Future<String> extractAsUtf8(String filename) {
+  Future<String>? extractAsUtf8(String filename) {
     final stream = extractStream(filename);
     if (stream == null) return null;
 

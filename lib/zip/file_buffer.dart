@@ -10,14 +10,14 @@ class FileBuffer {
       file.open(),
       file.length(),
     ]);
-    return FileBuffer._(args[0], args[1]);
+    return FileBuffer._(args[0] as RandomAccessFile, args[1] as int);
   }
 
-  static const _BLOCK_SHIFT = 14; // 16KB
-  static const _BLOCK_SIZE = 1 << _BLOCK_SHIFT;
-  static const _BLOCK_MASK = _BLOCK_SIZE - 1;
+  static const blockShift = 14; // 16KB
+  static const blockSize = 1 << blockShift;
+  static const blockMask = blockSize - 1;
 
-  List<int> _buffer = List<int>(_BLOCK_SIZE);
+  final List<int> _buffer = List<int>.filled(blockSize, 0);
   int _blockIndex = -1;
 
   final RandomAccessFile _file;
@@ -61,16 +61,17 @@ class FileBuffer {
   }
 
   Future<List<int>> _read(final int count) async {
-    final result = List<int>(count);
+    // todo check was List(count)
+    final result = List<int>.filled(count, 0);
     if (count == 0) return result;
 
     var start = 0;
-    var blkIndexStart = _position >> _BLOCK_SHIFT;
-    var blkOffsetStart = _position & _BLOCK_MASK;
+    var blkIndexStart = _position >> blockShift;
+    var blkOffsetStart = _position & blockMask;
     final end = _position + count;
     if (blkIndexStart == _blockIndex) {
       // read from current buffer
-      final remained = _BLOCK_SIZE - blkOffsetStart;
+      final remained = blockSize - blkOffsetStart;
       start = count > remained ? remained : count;
       result.setRange(0, start, _buffer, blkOffsetStart);
 
@@ -81,8 +82,8 @@ class FileBuffer {
       blkOffsetStart = 0;
     }
 
-    final blkIndexEnd = end >> _BLOCK_SHIFT;
-    final lastBlockPos = blkIndexEnd << _BLOCK_SHIFT;
+    final blkIndexEnd = end >> blockShift;
+    final lastBlockPos = blkIndexEnd << blockShift;
     // directly read blocks
     if (blkIndexStart != blkIndexEnd) {
       if (_blockIndex != _fileBlockIndex) {
@@ -100,7 +101,7 @@ class FileBuffer {
     }
 
     // read to buffer
-    await _file.readInto(_buffer, 0, _BLOCK_SIZE);
+    await _file.readInto(_buffer, 0, blockSize);
     _blockIndex = blkIndexEnd;
     _fileBlockIndex = blkIndexEnd + 1;
 

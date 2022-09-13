@@ -5,13 +5,13 @@ author: eGust<egustc@gmail.com>
 homepage: https://github.com/eGust/epub-package.dart
 
 environment:
-  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+  sdk: ">=2.18.0-dev.68.0 <3.0.0"
 
-dependencies:
-  xml: ^3.2.5
-  html: ^0.13.3+3
-  path: ^1.6.2
-  mime: ^0.9.6+2
+dependencies: 
+  html: ^0.15.0
+  mime: ^1.0.2
+  path: ^1.8.2
+  xml: ^6.1.0
 
 dev_dependencies:
-  test: ^1.5.1
+  test: ^1.16.0

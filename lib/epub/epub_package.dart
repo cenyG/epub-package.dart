@@ -1,9 +1,9 @@
 part of epub_package;
 
-/// Main class you need to use.
 class EpubPackage {
   /// Constructs an instance with a `File` object.
   EpubPackage(this.file);
+  EpubPackage._(this.file);
 
   /// `File` object assigned
   final File file;
@@ -11,11 +11,11 @@ class EpubPackage {
   /// holds a map of filename-[EpubFile] pairs
   final files = <String, EpubFile>{};
 
-  EpubMeta _meta;
-  EpubNav _nav;
+  EpubMeta? _meta;
+  EpubNav? _nav;
 
-  int _fileSize;
-  int _timestamp;
+  late int _fileSize;
+  late int _timestamp;
   bool _unloaded = true;
   bool _properlyLoaded = false;
 
@@ -23,10 +23,10 @@ class EpubPackage {
   String get filePath => file.path;
 
   /// Returns [EpubMeta] data
-  EpubMeta get metadata => _meta;
+  EpubMeta? get metadata => _meta;
 
   /// Returns [EpubNav] data
-  EpubNav get nav => _nav;
+  EpubNav? get nav => _nav;
 
   /// Gets file size of the EPub file
   int get fileSize => _fileSize;
@@ -54,6 +54,13 @@ class EpubPackage {
     _timestamp = sizes[1];
   }
 
+  static Future<EpubPackage> create(File file) async {
+    var instance = EpubPackage._(file);
+    await instance.load();
+
+    return instance;
+  }
+
   /// Tries to parse the EPub file and load all data
   /// Returns whether it's successful
   Future<bool> load() async {
@@ -77,78 +84,74 @@ class EpubPackage {
   bool hasFile(String filename) => files.containsKey(filename);
 
   /// Returns [EpubDocument] by [filename]. The result will be `null` if not exists
-  EpubDocument getDocumentByPath(String filename) =>
-      EpubDocument.fromAsset(_meta.getItemByPath(filename), this) ??
+  EpubDocument? getDocumentByPath(String filename) =>
+      EpubDocument.fromAsset(_meta?.getItemByPath(filename), this) ??
       (hasFile(filename)
           ? EpubDocument._(filename: filename, package: this)
           : null);
 
   /// Returns [EpubDocument] by EPub asset's ID
-  EpubDocument getDocumentById(String id) =>
-      EpubDocument.fromAsset(_meta.getItemById(id), this);
+  EpubDocument? getDocumentById(String id) =>
+      EpubDocument.fromAsset(_meta?.getItemById(id), this);
 
   /// Returns `null` or `Stream` by giving [filename]
-  Future<Stream<List<int>>> readStream(String filename) async {
+  Stream<List<int>>? readStream(String? filename) {
     final f = filename == null ? null : files[filename];
-    return f == null ? null : await f.toStream(file);
+    return f?.toStream(file);
   }
 
   /// Returns `null` or `Stream` by giving [EpubFile]
-  Future<Stream<List<int>>> fileStream(EpubFile file) async {
-    return file == null ? null : await file.toStream(this.file);
+  Stream<List<int>>? fileStream(EpubFile? file) {
+    return file?.toStream(this.file);
   }
 
   /// Returns `null` or raw `Stream` by giving [filename]
-  Future<Stream<List<int>>> rawStream(String filename) async {
+  Stream<List<int>>? rawStream(String? filename) {
     final f = filename == null ? null : files[filename];
-    return f == null ? null : await f.toRawStream(file);
+    return f?.toRawStream(file);
   }
 
   /// Returns `null` or raw `Stream` by giving [EpubFile]
-  Future<Stream<List<int>>> fileRawStream(EpubFile file) async {
-    return file == null ? null : await file.toRawStream(this.file);
+  Stream<List<int>>? fileRawStream(EpubFile? file) {
+    return file?.toRawStream(this.file);
   }
 
   /// Returns `null` or `List<int>` by giving [filename]
-  Future<List<int>> readAsBytes(String filename) async =>
-      (await readStream(filename))?.expand((x) => x)?.toList();
+  Future<List<int>>? readAsBytes(String? filename) =>
+      readStream(filename)?.expand((x) => x).toList();
 
   /// Returns `null` or `List<int>` by giving [EpubFile]
-  Future<List<int>> fileBytes(EpubFile file) async =>
-      (await fileStream(file))?.expand((x) => x)?.toList();
+  Future<List<int>>? fileBytes(EpubFile? file) =>
+      fileStream(file)?.expand((x) => x).toList();
 
   /// Returns `null` or raw `List<int>` by giving [filename]
-  Future<List<int>> rawBytes(String filename) async =>
-      (await rawStream(filename))?.expand((x) => x)?.toList();
+  Future<List<int>>? rawBytes(String filename) =>
+      rawStream(filename)?.expand((x) => x).toList();
 
   /// Returns `null` or raw `List<int>` by giving [EpubFile]
-  Future<List<int>> fileRawBytes(EpubFile file) async =>
-      (await fileRawStream(file))?.expand((x) => x)?.toList();
+  Future<List<int>>? fileRawBytes(EpubFile? file) =>
+      fileRawStream(file)?.expand((x) => x).toList();
 
   /// Returns `null` or `String` by giving [filename]
-  Future<String> readText(String filename,
-      {Converter<List<int>, String> decoder}) async {
-    final stream = await readStream(filename);
-    return stream == null
-        ? null
-        : await stream.transform(decoder ?? utf8.decoder).join();
+  Future<String>? readText(String? filename,
+      {Converter<List<int>, String>? decoder}) {
+    final stream = readStream(filename);
+    return stream?.transform(decoder ?? utf8.decoder).join();
   }
 
   /// Returns `null` or `String` by giving [EpubFile]
-  Future<String> readFileText(EpubFile file,
-      {Converter<List<int>, String> decoder}) async {
-    final stream = await fileStream(file);
-    return stream == null
-        ? null
-        : await stream.transform(decoder ?? utf8.decoder).join();
+  Future<String>? readFileText(EpubFile? file,
+      {Converter<List<int>, String>? decoder}) {
+    final stream = fileStream(file);
+    return stream?.transform(decoder ?? utf8.decoder).join();
   }
 
   /// Decodes [asset] as UTF-8 `String`
-  Future<String> assetAsUtf8(EpubAsset asset) => readText(asset?.filename);
+  Future<String>? assetAsUtf8(EpubAsset? asset) => readText(asset?.filename);
 
   Future<void> _loadZipFiles() async {
     final zip = await ZipPackage.from(file);
-    zip.entries.values.forEach((f) {
+    zip?.entries.values.forEach((f) {
       files[f.filename] = EpubFile(
         f.filename,
         f.offsetEnd,
@@ -191,7 +194,7 @@ class EpubPackage {
   /// Returns `null` when something went wrong.
   /// It checks some basic key-value pares of the `JSON`.
   /// Also the file must exist and has the same size and last modified timestamp.
-  static Future<EpubPackage> loadFromJson(Map<String, dynamic> json) async {
+  static Future<EpubPackage?> loadFromJson(Map<String, dynamic> json) async {
     if (!json['loaded']) return null;
 
     final filename = json['filename'];
@@ -204,10 +207,11 @@ class EpubPackage {
       file.length(),
       getFileTimestamp(file),
     ]);
-    if (sizes[0] != json['fileSize'] || sizes[1] != json['timestamp'])
+    if (sizes[0] != json['fileSize'] || sizes[1] != json['timestamp']) {
       return null;
+    }
 
-    final package = EpubPackage(file);
+    final package = EpubPackage._(file);
     return package._loadFromJson(json) ? package : null;
   }
 

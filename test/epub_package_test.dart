@@ -19,7 +19,7 @@ void main() async {
   // });
 }
 
-void testPackages() async {
+Future<void> testPackages() async {
   const files = [
     'A-Room-with-a-View-morrison.epub',
     'Beyond-Good-and-Evil-Galbraithcolor.epub',
@@ -45,17 +45,17 @@ void testPackages() async {
   }));
 
   await Future.wait(results.map((h) async {
-    final DateTime start = h['start'];
-    final DateTime stop = h['stop'];
-    final EpubPackage pkg = h['package'];
+    final DateTime start = h['start'] as DateTime;
+    final DateTime stop = h['stop'] as DateTime;
+    final EpubPackage pkg = h['package'] as EpubPackage;
     final ts = stop.difference(start);
     print('[time: $ts]\t${pkg.filePath}');
     // print(jsonEncode(pkg));
-    final coverAsset = pkg.metadata.getCoverImageAsset();
+    final coverAsset = pkg.metadata?.getCoverImageAsset();
     if (coverAsset != null) {
       final cover = pkg.getDocumentById(coverAsset.id);
-      final bytes = await cover.readAsBytes();
-      print('${coverAsset.filename}: ${bytes.length}');
+      final bytes = await cover?.readAsBytes();
+      print('${coverAsset.filename}: ${bytes?.length}');
     }
     print('\n');
   }));
